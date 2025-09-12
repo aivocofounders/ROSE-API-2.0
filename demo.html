@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aivoco Call</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            font-weight: 300;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .call-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .call-button.start {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .call-button.start:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.3);
+        }
+
+        .call-button.end {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            color: white;
+        }
+
+        .call-button.end:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(244, 67, 54, 0.3);
+        }
+
+        .call-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .status.disconnected {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status.connecting {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status.connected {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .audio-controls {
+            display: none;
+            margin: 25px 0;
+        }
+
+        .audio-indicator {
+            display: none;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            margin: 15px 0;
+            font-size: 16px;
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+
+        .audio-indicator.speaking {
+            background: #FF5722;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .volume-control {
+            margin: 20px 0;
+        }
+
+        .volume-control label {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .volume-control input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .logs-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .logs-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .logs-container {
+            background: #f8f9fa;
+            border: 1px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-x: auto;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+
+        .log-entry {
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        .log-timestamp {
+            color: #666;
+            font-weight: normal;
+        }
+
+        .log-info {
+            color: #333;
+        }
+
+        .log-success {
+            color: #2e7d32;
+            font-weight: 500;
+        }
+
+        .log-warning {
+            color: #ef6c00;
+            font-weight: 500;
+        }
+
+        .log-error {
+            color: #c62828;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .call-button {
+                width: 100px;
+                height: 100px;
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎙️ AI Voice Call</h1>
+
+        <div class="form-group">
+            <label for="agentId">Agent ID</label>
+            <input type="text" id="agentId" placeholder="Enter your agent ID">
+        </div>
+
+        <div class="form-group">
+            <label for="apiKey">API Key</label>
+            <input type="text" id="apiKey" placeholder="Enter your API key">
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <button id="callButton" class="call-button start">📞</button>
+
+        <div id="status" class="status disconnected">
+            Ready to connect
+        </div>
+
+        <div class="audio-controls" id="audioControls">
+            <div class="audio-indicator" id="audioIndicator">
+                🎤 Listening...
+            </div>
+            <div class="volume-control">
+                <label for="volumeSlider">Volume: <span id="volumeValue">70</span>%</label>
+                <input type="range" id="volumeSlider" min="0" max="100" value="70">
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <div class="logs-header">Call Logs</div>
+            <div class="logs-container" id="logsContainer"></div>
+        </div>
+
+        <div class="footer">
+            Powered by Aivoco
+        </div>
+    </div>
+
+    <script>
+        class AIVoiceCall {
+            constructor() {
+                this.websocket = null;
+                this.mediaRecorder = null;
+                this.audioStream = null;
+                this.audioContext = null;
+                this.isConnected = false;
+                this.isRecording = false;
+                this.streamSid = null;
+                this.sequenceNumber = 1;
+
+                this.initializeElements();
+                this.setupEventListeners();
+            }
+
+            initializeElements() {
+                this.agentIdInput = document.getElementById('agentId');
+                this.apiKeyInput = document.getElementById('apiKey');
+                this.callButton = document.getElementById('callButton');
+                this.statusDiv = document.getElementById('status');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.audioControls = document.getElementById('audioControls');
+                this.audioIndicator = document.getElementById('audioIndicator');
+                this.volumeSlider = document.getElementById('volumeSlider');
+                this.volumeValue = document.getElementById('volumeValue');
+                this.logsContainer = document.getElementById('logsContainer');
+            }
+
+            setupEventListeners() {
+                this.callButton.addEventListener('click', () => this.toggleCall());
+                this.volumeSlider.addEventListener('input', (e) => {
+                    this.volumeValue.textContent = e.target.value;
+                });
+            }
+
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                this.log(message, 'error');
+                setTimeout(() => {
+                    this.errorMessage.style.display = 'none';
+                }, 5000);
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+
+                const timestampSpan = document.createElement('span');
+                timestampSpan.className = 'log-timestamp';
+                timestampSpan.textContent = `[${timestamp}]`;
+
+                const messageSpan = document.createElement('span');
+                messageSpan.className = `log-${type}`;
+                messageSpan.textContent = ` ${message}`;
+
+                logEntry.appendChild(timestampSpan);
+                logEntry.appendChild(messageSpan);
+
+                this.logsContainer.appendChild(logEntry);
+                this.logsContainer.scrollTop = this.logsContainer.scrollHeight;
+
+                // No deletion of log entries - keep all logs
+            }
+
+            updateStatus(status, className) {
+                this.statusDiv.textContent = status;
+                this.statusDiv.className = `status ${className}`;
+                this.log(status, className === 'connected' ? 'success' : className === 'disconnected' ? 'info' : 'warning');
+            }
+
+            updateCallButton(isConnected) {
+                if (isConnected) {
+                    this.callButton.textContent = '📴';
+                    this.callButton.className = 'call-button end';
+                } else {
+                    this.callButton.textContent = '📞';
+                    this.callButton.className = 'call-button start';
+                }
+            }
+
+            async toggleCall() {
+                if (this.isConnected) {
+                    this.endCall();
+                } else {
+                    await this.startCall();
+                }
+            }
+
+            async startCall() {
+                const agentId = this.agentIdInput.value.trim();
+                const apiKey = this.apiKeyInput.value.trim();
+
+                if (!agentId || !apiKey) {
+                    this.showError('Please enter both Agent ID and API Key');
+                    return;
+                }
+
+                try {
+                    this.log('Starting call initialization...', 'info');
+                    this.updateStatus('Connecting...', 'connecting');
+                    this.callButton.disabled = true;
+
+                    // Request microphone access
+                    this.log('Requesting microphone access...', 'info');
+                    await this.setupAudio();
+                    this.log('Microphone access granted', 'success');
+
+                    // Connect to WebSocket
+                    this.log('Connecting to WebSocket...', 'info');
+                    await this.connectWebSocket(apiKey, agentId);
+
+                    this.updateCallButton(true);
+                    this.agentIdInput.disabled = true;
+                    this.apiKeyInput.disabled = true;
+                    this.audioControls.style.display = 'block';
+                    this.log('Call started successfully', 'success');
+
+                } catch (error) {
+                    this.showError(error.message);
+                    this.updateStatus('Connection failed', 'disconnected');
+                    this.cleanup();
+                } finally {
+                    this.callButton.disabled = false;
+                }
+            }
+
+            async setupAudio() {
+                try {
+                    this.audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 16000
+                        }
+                    });
+
+                    // Setup audio context
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                    // Setup media recorder
+                    const options = [
+                        { mimeType: 'audio/webm;codecs=opus' },
+                        { mimeType: 'audio/webm' },
+                        { mimeType: 'audio/mp4' }
+                    ];
+
+                    let selectedOption = options.find(option =>
+                        MediaRecorder.isTypeSupported(option.mimeType)
+                    );
+
+                    if (!selectedOption) {
+                        throw new Error('No supported audio format found');
+                    }
+
+                    this.mediaRecorder = new MediaRecorder(this.audioStream, selectedOption);
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0 && this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                            this.sendAudioData(event.data);
+                        }
+                    };
+
+                } catch (error) {
+                    throw new Error(`Microphone access denied: ${error.message}`);
+                }
+            }
+
+            async connectWebSocket(apiKey, agentId) {
+                return new Promise((resolve, reject) => {
+                    const wsUrl = `wss://call.aivoco.on.cloud.vispark.in/ws/${encodeURIComponent(apiKey)}/${encodeURIComponent(agentId)}`;
+                    this.websocket = new WebSocket(wsUrl);
+
+                    this.websocket.onopen = () => {
+                        this.updateStatus('Connected', 'connected');
+                        this.isConnected = true;
+                        this.log('WebSocket connection established', 'success');
+                        this.sendInitialMessage();
+                        this.startAudioRecording();
+                        resolve();
+                    };
+
+                    this.websocket.onmessage = (event) => {
+                        this.handleWebSocketMessage(event);
+                    };
+
+                    this.websocket.onerror = () => {
+                        reject(new Error('Connection failed. Please check your credentials.'));
+                    };
+
+                    this.websocket.onclose = (event) => {
+                        this.isConnected = false;
+                        this.log(`WebSocket closed with code: ${event.code}`, 'warning');
+                        if (event.code !== 1000 && event.code !== 1005) {
+                            this.showError('Connection lost unexpectedly');
+                        }
+                    };
+
+                    setTimeout(() => {
+                        if (this.websocket.readyState !== WebSocket.OPEN) {
+                            reject(new Error('Connection timeout'));
+                        }
+                    }, 10000);
+                });
+            }
+
+            sendInitialMessage() {
+                try {
+                    // Send empty message first
+                    this.websocket.send('');
+                    this.log('Sent initial handshake message', 'info');
+
+                    // Send start message
+                    const streamSid = 'MZ' + Math.random().toString(36).substr(2, 30);
+                    const startMessage = {
+                        event: 'start',
+                        sequenceNumber: '1',
+                        start: {
+                            accountSid: 'AC' + Math.random().toString(36).substr(2, 30),
+                            streamSid: streamSid,
+                            callSid: 'CA' + Math.random().toString(36).substr(2, 30),
+                            tracks: ['inbound'],
+                            customParameters: {},
+                            mediaFormat: {
+                                encoding: 'audio/x-mulaw',
+                                sampleRate: 8000,
+                                channels: 1
+                            }
+                        },
+                        streamSid: streamSid
+                    };
+
+                    this.websocket.send(JSON.stringify(startMessage));
+                    this.streamSid = streamSid;
+                    this.log('Sent call initialization message', 'success');
+
+                } catch (error) {
+                    this.showError('Failed to initialize connection');
+                }
+            }
+
+            startAudioRecording() {
+                if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+                    this.mediaRecorder.start(100);
+                    this.isRecording = true;
+                    this.log('Audio recording started - you can now speak', 'success');
+                }
+            }
+
+            sendAudioData(audioBlob) {
+                if (this.websocket && this.websocket.readyState === WebSocket.OPEN && this.streamSid) {
+                    audioBlob.arrayBuffer().then(buffer => {
+                        const base64Audio = this.arrayBufferToBase64(buffer);
+                        const mediaMessage = {
+                            event: 'media',
+                            media: {
+                                track: 'inbound',
+                                chunk: this.sequenceNumber,
+                                timestamp: Date.now().toString(),
+                                payload: base64Audio
+                            },
+                            sequenceNumber: this.sequenceNumber
+                        };
+
+                        this.websocket.send(JSON.stringify(mediaMessage));
+                        // Log full outgoing audio data with payload preview
+                        const payloadPreview = base64Audio.substring(0, 50);
+                        this.log(`TX Audio: chunk=${this.sequenceNumber}, size=${base64Audio.length}B, raw=${buffer.byteLength}B, payload=${payloadPreview}...`, 'info');
+                        this.sequenceNumber++;
+                    });
+                }
+            }
+
+            arrayBufferToBase64(buffer) {
+                let binary = '';
+                const bytes = new Uint8Array(buffer);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary);
+            }
+
+            handleWebSocketMessage(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'media' && data.media && data.media.payload) {
+                        this.playAudio(data.media.payload);
+                        // Log full raw audio data stream info
+                        const payloadSize = data.media.payload.length;
+                        const chunk = data.media.chunk || 'N/A';
+                        const timestamp = data.media.timestamp || Date.now();
+                        const payloadPreview = data.media.payload.substring(0, 50);
+                        this.log(`RX Audio: chunk=${chunk}, size=${payloadSize}B, ts=${timestamp}, payload=${payloadPreview}...`, 'info');
+                    } else if (data.event && data.event !== 'media') {
+                        this.log(`RX Event: ${JSON.stringify(data)}`, 'info');
+                    }
+                } catch (error) {
+                    // Log full raw message if not JSON
+                    if (event.data && typeof event.data === 'string' && event.data.length > 0) {
+                        this.log(`RX Raw: ${event.data}`, 'info');
+                    }
+                }
+            }
+
+            async playAudio(base64Payload) {
+                try {
+                    const binaryString = atob(base64Payload);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+
+                    await this.playMulawAudio(bytes);
+
+                } catch (error) {
+                    // Ignore audio playback errors to prevent spam
+                }
+            }
+
+            async playMulawAudio(mulawData) {
+                try {
+                    const pcmData = this.mulawToPcm(mulawData);
+                    const audioBuffer = this.audioContext.createBuffer(1, pcmData.length, 8000);
+                    const channelData = audioBuffer.getChannelData(0);
+
+                    for (let i = 0; i < pcmData.length; i++) {
+                        channelData[i] = pcmData[i] / 32768.0;
+                    }
+
+                    const source = this.audioContext.createBufferSource();
+                    const gainNode = this.audioContext.createGain();
+
+                    source.buffer = audioBuffer;
+                    gainNode.gain.value = this.volumeSlider.value / 100;
+
+                    source.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+
+                    this.updateAudioIndicator('🔊 AI Speaking...', true);
+
+                    source.onended = () => {
+                        this.updateAudioIndicator('🎤 Listening...', false);
+                    };
+
+                    source.start();
+
+                } catch (error) {
+                    // Ignore audio processing errors
+                }
+            }
+
+            updateAudioIndicator(text, isSpeaking) {
+                if (this.audioIndicator) {
+                    this.audioIndicator.textContent = '🎤 Listening...';
+                    this.audioIndicator.style.display = 'block';
+
+                    if (isSpeaking) {
+                        this.audioIndicator.classList.add('speaking');
+                        this.currentlySpeaking = true;
+                    } else {
+                        this.audioIndicator.classList.remove('speaking');
+                        this.currentlySpeaking = false;
+                    }
+                }
+            }
+
+            mulawToPcm(mulawData) {
+                const mulawToPcmTable = [
+                    -32124, -31100, -30076, -29052, -28028, -27004, -25980, -24956,
+                    -23932, -22908, -21884, -20860, -19836, -18812, -17788, -16764,
+                    -15996, -15484, -14972, -14460, -13948, -13436, -12924, -12412,
+                    -11900, -11388, -10876, -10364, -9852, -9340, -8828, -8316,
+                    -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140,
+                    -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092,
+                    -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004,
+                    -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980,
+                    -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436,
+                    -1372, -1308, -1244, -1180, -1116, -1052, -988, -924,
+                    -876, -844, -812, -780, -748, -716, -684, -652,
+                    -620, -588, -556, -524, -492, -460, -428, -396,
+                    -372, -356, -340, -324, -308, -292, -276, -260,
+                    -244, -228, -212, -196, -180, -164, -148, -132,
+                    -120, -112, -104, -96, -88, -80, -72, -64,
+                    -56, -48, -40, -32, -24, -16, -8, 0,
+                    32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956,
+                    23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764,
+                    15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412,
+                    11900, 11388, 10876, 10364, 9852, 9340, 8828, 8316,
+                    7932, 7676, 7420, 7164, 6908, 6652, 6396, 6140,
+                    5884, 5628, 5372, 5116, 4860, 4604, 4348, 4092,
+                    3900, 3772, 3644, 3516, 3388, 3260, 3132, 3004,
+                    2876, 2748, 2620, 2492, 2364, 2236, 2108, 1980,
+                    1884, 1820, 1756, 1692, 1628, 1564, 1500, 1436,
+                    1372, 1308, 1244, 1180, 1116, 1052, 988, 924,
+                    876, 844, 812, 780, 748, 716, 684, 652,
+                    620, 588, 556, 524, 492, 460, 428, 396,
+                    372, 356, 340, 324, 308, 292, 276, 260,
+                    244, 228, 212, 196, 180, 164, 148, 132,
+                    120, 112, 104, 96, 88, 80, 72, 64,
+                    56, 48, 40, 32, 24, 16, 8, 0
+                ];
+
+                const pcmData = new Int16Array(mulawData.length);
+                for (let i = 0; i < mulawData.length; i++) {
+                    pcmData[i] = mulawToPcmTable[mulawData[i]];
+                }
+                return pcmData;
+            }
+
+            endCall() {
+                this.cleanup();
+                this.updateStatus('Call ended', 'disconnected');
+                this.updateCallButton(false);
+
+                this.agentIdInput.disabled = false;
+                this.apiKeyInput.disabled = false;
+                this.audioControls.style.display = 'none';
+            }
+
+            cleanup() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.isRecording = false;
+                }
+
+                if (this.audioStream) {
+                    this.audioStream.getTracks().forEach(track => track.stop());
+                    this.audioStream = null;
+                }
+
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+
+                if (this.websocket) {
+                    this.websocket.close();
+                    this.websocket = null;
+                }
+
+                this.streamSid = null;
+                this.sequenceNumber = 1;
+                this.isConnected = false;
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new AIVoiceCall();
+        });
+    </script>
+</body>
+
+</html>
